@@ -3369,6 +3369,12 @@ ScriptFile* script_lock(int script_id)
     if (script_cache_entries[cache_entry_id].script_id == script_id) {
         script_cache_entries[cache_entry_id].ref_count++;
         script_cache_entries[cache_entry_id].datetime = sub_45A7C0();
+        // DIAG (temporary): observe the ref_count increment on lock.
+        char diag_name[TIG_MAX_PATH];
+        if (!script_name_build_scr_name(script_id, diag_name, sizeof(diag_name))) {
+            diag_name[0] = '\0';
+        }
+        tig_debug_printf("[refcount DIAG] LOCK   %-24s (id=%d) ref=%d\n", diag_name, script_id, script_cache_entries[cache_entry_id].ref_count);
         return script_cache_entries[cache_entry_id].file;
     }
 
@@ -3379,6 +3385,12 @@ ScriptFile* script_lock(int script_id)
     if (cache_add(cache_entry_id, script_id)) {
         script_cache_entries[cache_entry_id].ref_count++;
         script_cache_entries[cache_entry_id].datetime = sub_45A7C0();
+        // DIAG (temporary): observe the ref_count increment on lock.
+        char diag_name[TIG_MAX_PATH];
+        if (!script_name_build_scr_name(script_id, diag_name, sizeof(diag_name))) {
+            diag_name[0] = '\0';
+        }
+        tig_debug_printf("[refcount DIAG] LOCK   %-24s (id=%d) ref=%d\n", diag_name, script_id, script_cache_entries[cache_entry_id].ref_count);
         return script_cache_entries[cache_entry_id].file;
     }
 
@@ -3396,6 +3408,17 @@ void script_unlock(int script_id)
 
     cache_entry_id = cache_find(script_id);
     script_cache_entries[cache_entry_id].ref_count--;
+    // DIAG (temporary): observe the ref_count decrement on unlock. In the buggy
+    // build this line is unreachable (the guard above returns first), so NO
+    // UNLOCK lines appear — proof that unlock never decrements in gameplay. When
+    // ref hits 0 the slot only becomes *evictable*; it is not removed yet.
+    char diag_name[TIG_MAX_PATH];
+    if (!script_name_build_scr_name(script_id, diag_name, sizeof(diag_name))) {
+        diag_name[0] = '\0';
+    }
+    tig_debug_printf("[refcount DIAG] UNLOCK %-24s (id=%d) ref=%d%s\n", diag_name, script_id,
+        script_cache_entries[cache_entry_id].ref_count,
+        script_cache_entries[cache_entry_id].ref_count == 0 ? "  (evictable)" : "");
 }
 
 // 0x44C480
@@ -3474,6 +3497,14 @@ bool cache_add(int cache_entry_id, int script_id)
 void cache_remove(int cache_entry_id)
 {
     if (script_cache_entries[cache_entry_id].script_id) {
+        // DIAG (temporary): the script is actually removed from the cache here.
+        // This happens LATER than ref reaching 0 — only when a slot must be
+        // freed for a new script (cache full). ref==0 alone does not remove it.
+        char diag_name[TIG_MAX_PATH];
+        if (!script_name_build_scr_name(script_cache_entries[cache_entry_id].script_id, diag_name, sizeof(diag_name))) {
+            diag_name[0] = '\0';
+        }
+        tig_debug_printf("[refcount DIAG] EVICT  %-24s (id=%d, removed from cache)\n", diag_name, script_cache_entries[cache_entry_id].script_id);
         script_file_destroy(script_cache_entries[cache_entry_id].file);
         script_cache_entries[cache_entry_id].script_id = 0;
     }
