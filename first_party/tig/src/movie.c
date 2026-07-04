@@ -76,6 +76,9 @@ int tig_movie_play(const char* path, TigMovieFlags movie_flags, int sound_track)
     bool stop;
     SDL_Scancode key = SDL_SCANCODE_UNKNOWN;
     TigVideoBufferCreateInfo vb_create_info;
+    bool resized = false;
+    int saved_width = 0;
+    int saved_height = 0;
 
     if (path == NULL) {
         tig_video_fade(0, 0, 0.0f, 1);
@@ -102,6 +105,24 @@ int tig_movie_play(const char* path, TigMovieFlags movie_flags, int sound_track)
     if (tig_video_buffer_create(&vb_create_info, &tig_movie_video_buffer) != TIG_OK) {
         BinkClose(tig_movie_bink);
         return TIG_ERR_GENERIC;
+    }
+
+    // If the movie is larger than the current framebuffer (e.g. high-resolution
+    // movies from a fan patch), switch the framebuffer to the movie's size for
+    // the duration of playback. The frame is then blitted 1:1 and the renderer's
+    // letterbox presentation scales the whole movie to the window. Restored on
+    // cleanup.
+    if ((int)tig_movie_bink->Width > tig_movie_screen_width
+        || (int)tig_movie_bink->Height > tig_movie_screen_height) {
+        if (tig_video_resize_framebuffer((int)tig_movie_bink->Width,
+                (int)tig_movie_bink->Height,
+                &saved_width,
+                &saved_height)
+            == TIG_OK) {
+            resized = true;
+            tig_movie_screen_width = (int)tig_movie_bink->Width;
+            tig_movie_screen_height = (int)tig_movie_bink->Height;
+        }
     }
 
     if ((movie_flags & TIG_MOVIE_FADE_IN) != 0) {
@@ -149,6 +170,13 @@ int tig_movie_play(const char* path, TigMovieFlags movie_flags, int sound_track)
 
     BinkClose(tig_movie_bink);
     tig_movie_bink = NULL;
+
+    // Restore the framebuffer resolution if it was changed for this movie.
+    if (resized) {
+        tig_video_resize_framebuffer(saved_width, saved_height, NULL, NULL);
+        tig_movie_screen_width = saved_width;
+        tig_movie_screen_height = saved_height;
+    }
 
     tig_window_invalidate_rect(NULL);
 
