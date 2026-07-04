@@ -74,7 +74,7 @@ int tig_movie_play(const char* path, TigMovieFlags movie_flags, int sound_track)
     unsigned int bink_open_flags = 0;
     TigMessage message;
     bool stop;
-    int key = -1;
+    SDL_Scancode key = SDL_SCANCODE_UNKNOWN;
     TigVideoBufferCreateInfo vb_create_info;
 
     if (path == NULL) {
@@ -127,13 +127,13 @@ int tig_movie_play(const char* path, TigMovieFlags movie_flags, int sound_track)
             if ((movie_flags & TIG_MOVIE_IGNORE_KEYBOARD) == 0
                 && message.type == TIG_MESSAGE_KEYBOARD
                 && message.data.keyboard.pressed == 1) {
-                key = message.data.keyboard.key;
+                key = message.data.keyboard.scancode;
                 stop = true;
             }
         }
     }
 
-    if (key != -1) {
+    if (key != SDL_SCANCODE_UNKNOWN) {
         // Wait until the key is released.
         while (tig_kb_is_key_pressed(key)) {
             tig_ping();
