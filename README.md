@@ -3,6 +3,18 @@
 > [!IMPORTANT]
 > This is a beta, technology preview, or whatever other label you have in mind for a pre-release software.
 
+## About this fork
+
+This fork tracks upstream and additionally carries the following work:
+
+- Dialogue text scaling and a resizable window (see [Configuration](#configuration)).
+- Optional FFmpeg-based Bink movie playback on macOS and Linux, including support for high-resolution (upscaled) movies (see [Building from source](#building-from-source)).
+- The following upstream pull requests, merged ahead of upstream:
+  - [#140](https://github.com/alexbatalov/arcanum-ce/pull/140) — misc fixes: ghost buttons, cursor, ESC behavior, save/load shortcuts, overlay dismiss
+  - [#142](https://github.com/alexbatalov/arcanum-ce/pull/142) — populate quest-log `dumb_description` from `gamequestlogdumb.mes`
+  - [#144](https://github.com/alexbatalov/arcanum-ce/pull/144) — mouse wheel scrolling
+  - [#147](https://github.com/alexbatalov/arcanum-ce/pull/147) — script cache leak fix
+
 ## Status
 
 The game is ready, but I haven't tested everything - just the speedrun - and that was about three months ago, so things might have changed since then.
